@@ -1,0 +1,13 @@
+{
+	"name": "pension-sim-de",
+	"image": "mcr.microsoft.com/devcontainers/javascript-node:24-bookworm",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"bradlc.vscode-tailwindcss",
+				"ms-vscode.vscode-typescript-next",
+				"oxc.oxc-vscode"
+			]
+		}
+	}
+}

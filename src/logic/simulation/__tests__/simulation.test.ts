@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { simulateDepot } from "../depot";
-import {
-  simulateInsurance,
-  simulateInsuranceAccumulation,
-  simulateInsurancePayout,
-} from "../insurance";
+import { simulateInsurance } from "../insurance";
 import type {
   GlobalParameters,
   DepotParameters,
@@ -90,7 +86,12 @@ describe("Simulation Engines", () => {
       taxParams,
       noPayout,
     );
-    const insAcc = simulateInsuranceAccumulation(globalParams, insuranceParams);
+    const insAcc = simulateInsurance(
+      globalParams,
+      insuranceParams,
+      taxParams,
+      noPayout,
+    );
 
     const totalMonths =
       (globalParams.ageRetirement - globalParams.ageStart) * 12;
@@ -113,10 +114,7 @@ describe("Simulation Engines", () => {
       taxParams,
       payoutParams,
     );
-    const insAcc = simulateInsuranceAccumulation(globalParams, insuranceParams);
-
-    const insPayout = simulateInsurancePayout(
-      insAcc.state,
+    const insSim = simulateInsurance(
       globalParams,
       insuranceParams,
       taxParams,
@@ -126,9 +124,10 @@ describe("Simulation Engines", () => {
     const accumulationMonths =
       (globalParams.ageRetirement - globalParams.ageStart) * 12;
     const depotPayoutHistory = depotSim.history.slice(accumulationMonths);
+    const insPayoutHistory = insSim.history.slice(accumulationMonths);
 
     expect(depotPayoutHistory.length).toBeGreaterThan(0);
-    expect(insPayout.history.length).toBeGreaterThan(0);
+    expect(insPayoutHistory.length).toBeGreaterThan(0);
 
     for (const point of depotPayoutHistory) {
       expect(Number.isFinite(point.netPortfolioValue)).toBe(true);
@@ -145,7 +144,7 @@ describe("Simulation Engines", () => {
       }
     }
 
-    for (const point of insPayout.history) {
+    for (const point of insPayoutHistory) {
       expect(Number.isFinite(point.netPortfolioValue)).toBe(true);
       expect(Number.isFinite(point.taxesPaid)).toBe(true);
       expect(Number.isFinite(point.grossCashflow)).toBe(true);
@@ -243,24 +242,21 @@ describe("Simulation Engines", () => {
       taxParams,
       payoutParams,
     );
-    const insAcc = simulateInsuranceAccumulation(emptyGlobal, insuranceParams);
-
-    expect(depotSim.state.totalValue).toBe(0);
-    expect(insAcc.state.totalValue).toBe(0);
-
-    const insPayout = simulateInsurancePayout(
-      insAcc.state,
+    const insSim = simulateInsurance(
       emptyGlobal,
       insuranceParams,
       taxParams,
       payoutParams,
     );
 
+    expect(depotSim.state.totalValue).toBe(0);
+    expect(insSim.state.totalValue).toBe(0);
+
     const accumulationMonths =
       (emptyGlobal.ageRetirement - emptyGlobal.ageStart) * 12;
     expect(depotSim.history).toHaveLength(accumulationMonths + 1);
     expect(depotSim.history.every((p) => p.portfolioValue === 0)).toBe(true);
-    expect(insPayout.history).toHaveLength(0);
+    expect(insSim.history.every((p) => p.portfolioValue === 0)).toBe(true);
   });
 
   it("handles 0% and negative market returns without failure", () => {
@@ -319,9 +315,7 @@ describe("Simulation Engines", () => {
       taxParams,
       heavyPayout,
     );
-    const insAcc = simulateInsuranceAccumulation(smallGlobal, insuranceParams);
-    const insPayout = simulateInsurancePayout(
-      insAcc.state,
+    const insSim = simulateInsurance(
       smallGlobal,
       insuranceParams,
       taxParams,
@@ -331,8 +325,8 @@ describe("Simulation Engines", () => {
     // 12 months accumulation + 1 month payout before depletion = 13 months total
     expect(depotSim.history.length).toBe(13);
     expect(depotSim.state.totalValue).toBe(0);
-    expect(insPayout.history.length).toBe(1);
-    expect(insPayout.state.totalValue).toBe(0);
+    expect(insSim.history.length).toBe(13);
+    expect(insSim.state.totalValue).toBe(0);
   });
 
   it("supports yearly withdrawal intervals", () => {
@@ -374,9 +368,7 @@ describe("Simulation Engines", () => {
       taxParams,
       grossPayout,
     );
-    const insAcc = simulateInsuranceAccumulation(globalParams, insuranceParams);
-    const insPayout = simulateInsurancePayout(
-      insAcc.state,
+    const insSim = simulateInsurance(
       globalParams,
       insuranceParams,
       taxParams,
@@ -386,10 +378,11 @@ describe("Simulation Engines", () => {
     const accumulationMonths =
       (globalParams.ageRetirement - globalParams.ageStart) * 12;
     const firstPayoutMonthDepot = depotSim.history[accumulationMonths];
+    const firstPayoutMonthIns = insSim.history[accumulationMonths];
 
     // In gross mode, actualGrossWithdrawal is exactly 2000€
     expect(firstPayoutMonthDepot?.grossCashflow).toBe(-2000);
-    expect(insPayout.history[0]?.grossCashflow).toBe(-2000);
+    expect(firstPayoutMonthIns?.grossCashflow).toBe(-2000);
     // Net cashflow is less than 2000 due to fees/taxes
     expect(Math.abs(firstPayoutMonthDepot?.netCashflow ?? 0)).toBeLessThan(
       2000,
@@ -412,22 +405,23 @@ describe("Simulation Engines", () => {
   });
 
   it("supports insurance without Halbeinkünfteverfahren (halfIncomeProcedureActive: false)", () => {
-    const insAcc = simulateInsuranceAccumulation(globalParams, insuranceParams);
     const noHalbeinkuenfte: InsuranceParameters = {
       ...insuranceParams,
       halfIncomeProcedureActive: false,
     };
 
-    const insPayout = simulateInsurancePayout(
-      insAcc.state,
+    const insSim = simulateInsurance(
       globalParams,
       noHalbeinkuenfte,
       taxParams,
       payoutParams,
     );
-    expect(insPayout.history.length).toBeGreaterThan(0);
+    const accumulationMonths =
+      (globalParams.ageRetirement - globalParams.ageStart) * 12;
+    const insPayoutHistory = insSim.history.slice(accumulationMonths);
+    expect(insPayoutHistory.length).toBeGreaterThan(0);
     // Taxes paid with standard Abgeltungsteuer should be non-zero
-    const totalTaxes = insPayout.history.reduce(
+    const totalTaxes = insPayoutHistory.reduce(
       (sum, p) => sum + p.taxesPaid,
       0,
     );
@@ -451,9 +445,11 @@ describe("Simulation Engines", () => {
       taxParams,
       noPayout,
     );
-    const insWithSwitch = simulateInsuranceAccumulation(
+    const insWithSwitch = simulateInsurance(
       switchParams,
       insuranceParams,
+      taxParams,
+      noPayout,
     );
 
     // Month 120 in Depot must trigger full capital gains tax on the switch
@@ -483,10 +479,11 @@ describe("Simulation Engines", () => {
       taxParams,
       payoutParams,
     );
-    const insAcc = simulateInsuranceAccumulation(
+    const insSim = simulateInsurance(
       growthParams,
       insuranceParams,
       taxParams,
+      payoutParams,
     );
 
     const accumulationMonths =
@@ -494,7 +491,7 @@ describe("Simulation Engines", () => {
 
     // Final accumulation month: Large unrealized gains exist
     const finalDepotMonth = depotSim.history[accumulationMonths - 1];
-    const finalInsMonth = insAcc.history[insAcc.history.length - 1];
+    const finalInsMonth = insSim.history[accumulationMonths - 1];
 
     expect(finalDepotMonth).toBeDefined();
     expect(finalInsMonth).toBeDefined();

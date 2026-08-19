@@ -5,15 +5,21 @@ import { ImpressumContent } from "../ImpressumContent";
 import { PrivacyPolicyContent } from "../PrivacyPolicyContent";
 import { LegalModal } from "../LegalModal";
 import { Footer } from "../../layout/Footer";
+import { getDecodedLegalField } from "../../../config/legalConfig";
 
 describe("Legal Components", () => {
+  const expectedName = getDecodedLegalField("name");
+  const expectedEmail = getDecodedLegalField("email");
+  const expectedPhone = getDecodedLegalField("phone");
+  const expectedPrivacyEmail = getDecodedLegalField("privacyEmail");
+
   describe("ObfuscatedContact", () => {
     it("renders a reveal button initially and decodes on click even when isRevealed={false}", () => {
       render(
         <ObfuscatedContact fieldKey="name" label="Name:" isRevealed={false} />,
       );
 
-      // Initially, the text should NOT contain "Max Mustermann" in plain rendered text (it only has the reveal button)
+      // Initially, the text should NOT contain the name in plain rendered text (it only has the reveal button)
       const revealBtn = screen.getByRole("button", {
         name: /Klicken um Name: anzuzeigen/i,
       });
@@ -22,8 +28,8 @@ describe("Legal Components", () => {
       // Click to reveal individual item
       fireEvent.click(revealBtn);
 
-      // Now "Max Mustermann" should be revealed
-      expect(screen.getByText("Max Mustermann")).toBeDefined();
+      // Now the name should be revealed
+      expect(screen.getByText(expectedName)).toBeDefined();
     });
 
     it("renders mailto link for email type when revealed", () => {
@@ -32,12 +38,10 @@ describe("Legal Components", () => {
       );
 
       const emailLink = screen.getByRole("link", {
-        name: "max.mustermann@beispiel.de",
+        name: expectedEmail,
       });
       expect(emailLink).toBeDefined();
-      expect(emailLink.getAttribute("href")).toBe(
-        "mailto:max.mustermann@beispiel.de",
-      );
+      expect(emailLink.getAttribute("href")).toBe(`mailto:${expectedEmail}`);
     });
 
     it("renders tel link for phone type when revealed", () => {
@@ -45,9 +49,10 @@ describe("Legal Components", () => {
         <ObfuscatedContact fieldKey="phone" type="phone" isRevealed={true} />,
       );
 
-      const phoneLink = screen.getByRole("link", { name: "+49 123 456789" });
+      const phoneLink = screen.getByRole("link", { name: expectedPhone });
       expect(phoneLink).toBeDefined();
-      expect(phoneLink.getAttribute("href")).toBe("tel:+49123456789");
+      const sanitizedPhone = expectedPhone.replace(/\s+/g, "");
+      expect(phoneLink.getAttribute("href")).toBe(`tel:${sanitizedPhone}`);
     });
 
     it("allows individual reveals when rendered alongside other unrevealed fields", () => {
@@ -74,11 +79,11 @@ describe("Legal Components", () => {
       fireEvent.click(emailBtn);
 
       // Email is revealed, Name is still hidden
-      expect(screen.getByText("max.mustermann@beispiel.de")).toBeDefined();
+      expect(screen.getByText(expectedEmail)).toBeDefined();
       expect(
         screen.getByRole("button", { name: /Klicken um Name: anzuzeigen/i }),
       ).toBeDefined();
-      expect(screen.queryByText("Max Mustermann")).toBeNull();
+      expect(screen.queryByText(expectedName)).toBeNull();
     });
   });
 
@@ -98,8 +103,8 @@ describe("Legal Components", () => {
       });
       fireEvent.click(revealAllBtn);
 
-      expect(screen.getAllByText("Max Mustermann").length).toBeGreaterThan(0);
-      expect(screen.getByText("max.mustermann@beispiel.de")).toBeDefined();
+      expect(screen.getAllByText(expectedName).length).toBeGreaterThan(0);
+      expect(screen.getByText(expectedEmail)).toBeDefined();
     });
   });
 
@@ -126,8 +131,8 @@ describe("Legal Components", () => {
       });
       fireEvent.click(revealAllBtn);
 
-      expect(screen.getByText("Max Mustermann")).toBeDefined();
-      expect(screen.getByText("datenschutz@beispiel.de")).toBeDefined();
+      expect(screen.getByText(expectedName)).toBeDefined();
+      expect(screen.getByText(expectedPrivacyEmail)).toBeDefined();
     });
   });
 

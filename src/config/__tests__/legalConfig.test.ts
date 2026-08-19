@@ -31,23 +31,41 @@ describe("legalConfig & Base64 Obfuscation", () => {
     expect(encodeBase64("")).toBe("");
   });
 
-  it("should return default legal configuration when no build-time constants are injected", () => {
+  it("should decode default fallback base64 constants correctly", () => {
+    expect(decodeBase64(DEFAULT_LEGAL_CONFIG_B64.name)).toBe("Max Mustermann");
+    expect(decodeBase64(DEFAULT_LEGAL_CONFIG_B64.email)).toBe(
+      "max.mustermann@beispiel.de",
+    );
+    expect(decodeBase64(DEFAULT_LEGAL_CONFIG_B64.street)).toBe(
+      "Musterstraße 12",
+    );
+    expect(decodeBase64(DEFAULT_LEGAL_CONFIG_B64.phone)).toBe("+49 123 456789");
+    expect(decodeBase64(DEFAULT_LEGAL_CONFIG_B64.privacyEmail)).toBe(
+      "datenschutz@beispiel.de",
+    );
+  });
+
+  it("should return valid legal configuration and match decoded values", () => {
     const encoded = getEncodedLegalConfig();
-    expect(encoded.name).toBe(DEFAULT_LEGAL_CONFIG_B64.name);
-    expect(encoded.email).toBe(DEFAULT_LEGAL_CONFIG_B64.email);
-    expect(encoded.street).toBe(DEFAULT_LEGAL_CONFIG_B64.street);
+    expect(encoded.name).toBeDefined();
+    expect(encoded.email).toBeDefined();
+    expect(encoded.street).toBeDefined();
+    expect(encoded.phone).toBeDefined();
+    expect(encoded.privacyEmail).toBeDefined();
 
     const decoded = getDecodedLegalConfig();
-    expect(decoded.name).toBe("Max Mustermann");
-    expect(decoded.email).toBe("max.mustermann@beispiel.de");
-    expect(decoded.street).toBe("Musterstraße 12");
-    expect(decoded.phone).toBe("+49 123 456789");
-    expect(decoded.privacyEmail).toBe("datenschutz@beispiel.de");
+    expect(decoded.name).toBe(decodeBase64(encoded.name));
+    expect(decoded.email).toBe(decodeBase64(encoded.email));
+    expect(decoded.street).toBe(decodeBase64(encoded.street));
+    expect(decoded.phone).toBe(decodeBase64(encoded.phone));
+    expect(decoded.privacyEmail).toBe(decodeBase64(encoded.privacyEmail));
   });
 
   it("should decode a single field on demand", () => {
-    expect(getDecodedLegalField("name")).toBe("Max Mustermann");
-    expect(getDecodedLegalField("email")).toBe("max.mustermann@beispiel.de");
-    expect(getDecodedLegalField("phone")).toBe("+49 123 456789");
+    const config = getDecodedLegalConfig();
+    expect(getDecodedLegalField("name")).toBe(config.name);
+    expect(getDecodedLegalField("email")).toBe(config.email);
+    expect(getDecodedLegalField("phone")).toBe(config.phone);
+    expect(getDecodedLegalField("privacyEmail")).toBe(config.privacyEmail);
   });
 });

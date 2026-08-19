@@ -1,0 +1,75 @@
+name: Publish to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: Setup Node.js 24.x
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 24.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          HUSKY: 0
+
+      - name: Release check (lint, test, build, audit)
+        run: npm run release:check
+        env:
+          HUSKY: 0
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
+          LEGAL_NAME: ${{ secrets.LEGAL_NAME }}
+          LEGAL_STREET: ${{ secrets.LEGAL_STREET }}
+          LEGAL_CITY: ${{ secrets.LEGAL_CITY }}
+          LEGAL_COUNTRY: ${{ secrets.LEGAL_COUNTRY }}
+          LEGAL_PHONE: ${{ secrets.LEGAL_PHONE }}
+          LEGAL_EMAIL: ${{ secrets.LEGAL_EMAIL }}
+          PRIVACY_EMAIL: ${{ secrets.PRIVACY_EMAIL }}
+          LEGAL_EDITORIAL_NAME: ${{ secrets.LEGAL_EDITORIAL_NAME }}
+          LEGAL_EDITORIAL_STREET: ${{ secrets.LEGAL_EDITORIAL_STREET }}
+          LEGAL_EDITORIAL_CITY: ${{ secrets.LEGAL_EDITORIAL_CITY }}
+          LEGAL_EDITORIAL_COUNTRY: ${{ secrets.LEGAL_EDITORIAL_COUNTRY }}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+        with:
+          path: './dist'
+
+  deploy:
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128

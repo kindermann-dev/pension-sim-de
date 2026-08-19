@@ -5,7 +5,7 @@
 - **Purpose:** High-precision financial lifecycle simulation comparing a self-managed ETF portfolio (_ETF-Depot_) against a unit-linked pension insurance (_fondsgebundene Rentenversicherung_).
 - **Scope:** Full lifecycle simulation on a monthly discrete-time basis across both accumulation (_Ansparphase_) and withdrawal/payout (_Entnahmephase_) phases.
 - **Tech Stack:** React 19.2, TypeScript 6 (Strict Mode), Vite 8.2, Tailwind CSS v4.3, Recharts 3, Oxlint, Stylelint, HTMLHint, Prettier, Husky, Lint-Staged, Vitest 4.1 (Happy-DOM).
-- **CI/CD & Maintenance:** Continuous Integration (`.github/workflows/ci.yml`), Scheduled maintenance updates (`.github/workflows/scheduled-npm-update.yml`), Dependabot Auto-Merge (`.github/workflows/dependabot-auto-merge.yml`), and Dependabot config (`.github/dependabot.yml`).
+- **CI/CD & Maintenance:** Continuous Integration (`.github/workflows/ci.yml`), GitHub Pages Deployment (`.github/workflows/publish.yml`), Scheduled maintenance updates (`.github/workflows/scheduled-npm-update.yml`), Dependabot Auto-Merge (`.github/workflows/dependabot-auto-merge.yml`), and Dependabot config (`.github/dependabot.yml`).
 
 ---
 
